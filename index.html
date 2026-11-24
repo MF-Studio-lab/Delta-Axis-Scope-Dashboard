@@ -583,6 +583,12 @@ function renderCharts() {
     font: { color: '#cbd5e1', size: 11 },
     margin: { l: 55, r: 20, t: 28, b: 40 },
     hovermode: 'x unified',
+    hoverlabel: {
+      bgcolor: 'rgba(255, 255, 255, 0.3)',  // 白色 70% 透明
+      bordercolor: 'rgba(102, 102, 102, 0.35)',
+      font: { color: '#FFFFFF', size: 12, family: 'Segoe UI, Microsoft JhengHei, sans-serif' },
+      align: 'left'
+    },
     xaxis: { title: '時間 (秒)', gridcolor: '#1e293b', zeroline: false },
     grid: { rows: 3, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
     legend: { orientation: 'h', y: 1.07, x: 0 },
