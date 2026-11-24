@@ -13,14 +13,14 @@ Delta DVP50MC11T-06 PLC 示波器波形與運動軌跡分析儀 v2.8
 
 ## 線上 Demo
 
-🔗 **GitHub Pages**：https://mf-studio-lab.github.io/Delta-/
+🔗 **GitHub Pages**：https://mf-studio-lab.github.io/Delta-Axis-Scope-Dashboard/
 
 ## 本地開啟
 
 直接雙擊 `index.html` 或用任意靜態伺服器：
 
 ```bash
-cd Delta-
+cd Delta-Axis-Scope-Dashboard
 python3 -m http.server 8080
 # 開啟 http://localhost:8080
 ```
