@@ -198,7 +198,7 @@
 
   <div class="card">
     <div class="card-header">
-      <span class="card-title">空間運動軌跡與射料點位分佈</span>
+      <span class="card-title">空間運動軌跡與動作點位分佈（射料/空吐/清洗）</span>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
         <button class="btn btn-outline" style="padding:4px 10px;font-size:0.78rem" onclick="setTrajMode('3d')">3D 立體軌跡</button>
         <button class="btn btn-outline" style="padding:4px 10px;font-size:0.78rem" onclick="setTrajMode('xy')">XY 俯視圖</button>
@@ -658,12 +658,29 @@ function updateWaveCursor(d) {
   Plotly.restyle(waveDiv, { customdata: Array(n).fill(deltaT) });
 }
 
+// 軌跡點位標記規則：依數位信號名稱自動匹配
+const TRAJ_MARKERS = [
+  { label: '射料',   color: '#f43f5e', pattern: /PU|射料|inject/i },
+  { label: '空吐',   color: '#22c55e', pattern: /空吐|air\s*blow|blow/i },
+  { label: '清洗',   color: '#22d3ee', pattern: /清洗|clean|purge|wash/i }
+];
+
+function collectTrajMarkerGroups() {
+  const groups = [];
+  const usedKeys = new Set();
+  TRAJ_MARKERS.forEach(rule => {
+    const ds = meta.digitalSignals.find(d => rule.pattern.test(d.name) && !usedKeys.has(d.key));
+    if (!ds) return;
+    usedKeys.add(ds.key);
+    const pts = dataset.filter(d => d[ds.key] === 1);
+    if (!pts.length) return;
+    groups.push({ label: rule.label + ' (' + ds.name + ')', color: rule.color, pts });
+  });
+  return groups;
+}
+
 function renderTrajectory(activeIdx) {
-  // 優先使用名稱含 PU/射料 的數位信號，否則取第一個有 ON 的數位信號當高亮
-  let puKey = 'pu';
-  const puDs = meta.digitalSignals.find(ds => /PU|射料|inject/i.test(ds.name));
-  if (puDs) puKey = puDs.key;
-  const puPts = dataset.filter(d => d[puKey] === 1);
+  const markerGroups = collectTrajMarkerGroups();
   const cur = dataset[activeIdx] || dataset[0];
 
   if (trajMode === '3d') {
@@ -672,18 +689,20 @@ function renderTrajectory(activeIdx) {
         type: 'scatter3d', mode: 'lines', name: '運動路徑',
         x: dataset.map(d => d.x), y: dataset.map(d => d.y), z: dataset.map(d => d.z),
         line: { width: 5, color: dataset.map(d => d.t), colorscale: 'Viridis' }
-      },
-      {
-        type: 'scatter3d', mode: 'markers', name: '射料/高亮區間',
-        x: puPts.map(d => d.x), y: puPts.map(d => d.y), z: puPts.map(d => d.z),
-        marker: { size: 7, color: '#f43f5e' }
-      },
-      {
-        type: 'scatter3d', mode: 'markers', name: '目前游標位置',
-        x: [cur.x], y: [cur.y], z: [cur.z],
-        marker: { size: 8, color: '#fbbf24', line: { color: '#fff', width: 2 } }
       }
     ];
+    markerGroups.forEach(g => {
+      data3d.push({
+        type: 'scatter3d', mode: 'markers', name: g.label,
+        x: g.pts.map(d => d.x), y: g.pts.map(d => d.y), z: g.pts.map(d => d.z),
+        marker: { size: 7, color: g.color }
+      });
+    });
+    data3d.push({
+      type: 'scatter3d', mode: 'markers', name: '目前游標位置',
+      x: [cur.x], y: [cur.y], z: [cur.z],
+      marker: { size: 8, color: '#fbbf24', line: { color: '#fff', width: 2 } }
+    });
     Plotly.react('trajChart', data3d, {
       paper_bgcolor: 'rgba(0,0,0,0)',
       font: { color: '#cbd5e1', size: 11 },
@@ -701,18 +720,20 @@ function renderTrajectory(activeIdx) {
         type: 'scatter', mode: 'lines', name: 'XY 路徑',
         x: dataset.map(d => d.x), y: dataset.map(d => d.y),
         line: { width: 3, color: '#38bdf8' }
-      },
-      {
-        type: 'scatter', mode: 'markers', name: '射料/高亮點',
-        x: puPts.map(d => d.x), y: puPts.map(d => d.y),
-        marker: { size: 10, color: '#f43f5e' }
-      },
-      {
-        type: 'scatter', mode: 'markers', name: '目前游標',
-        x: [cur.x], y: [cur.y],
-        marker: { size: 12, color: '#fbbf24', line: { color: '#0f172a', width: 2 } }
       }
     ];
+    markerGroups.forEach(g => {
+      data2d.push({
+        type: 'scatter', mode: 'markers', name: g.label,
+        x: g.pts.map(d => d.x), y: g.pts.map(d => d.y),
+        marker: { size: 10, color: g.color }
+      });
+    });
+    data2d.push({
+      type: 'scatter', mode: 'markers', name: '目前游標',
+      x: [cur.x], y: [cur.y],
+      marker: { size: 12, color: '#fbbf24', line: { color: '#0f172a', width: 2 } }
+    });
     Plotly.react('trajChart', data2d, {
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: '#0f172a',
